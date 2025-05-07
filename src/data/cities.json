@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Delhi",
+    "lat": 28.66,
+    "lon": 77.23
+  },
+  {
+    "name": "Mumbai",
+    "lat": 19.076,
+    "lon": 72.877
+  },
+  {
+    "name": "Bangalore",
+    "lat": 12.972,
+    "lon": 77.594
+  },
+  {
+    "name": "Chennai",
+    "lat": 13.083,
+    "lon": 80.283
+  },
+  {
+    "name": "Kolkata",
+    "lat": 22.567,
+    "lon": 88.367
+  }
+]
