@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import useDebounce from '../hooks/useDebounce';
 
 const Comparison = () => {
   const [city, setCity] = useState('');
@@ -10,25 +11,34 @@ const Comparison = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleCityChange = async (value) => {
-    setCity(value);
-    if (value.length >= 2) {
-      try {
-        const response = await axios.get(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(value)}&format=json&limit=5`
-        );
-        setCitySuggestions(response.data.map(item => ({
-          id: item.place_id,
-          name: item.display_name,
-          country: item.address?.country || ''
-        })));
-      } catch (error) {
-        console.error('Error fetching city suggestions:', error);
+  const debouncedCity = useDebounce(city, 500);
+
+  useEffect(() => {
+    const searchCity = async () => {
+      if (debouncedCity.length >= 2) {
+        try {
+          const response = await axios.get(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(debouncedCity)}&format=json&limit=5`
+          );
+          setCitySuggestions(response.data.map(item => ({
+            id: item.place_id,
+            name: item.display_name,
+            country: item.address?.country || ''
+          })));
+        } catch (error) {
+          console.error('Error fetching city suggestions:', error);
+          setCitySuggestions([]);
+        }
+      } else {
         setCitySuggestions([]);
       }
-    } else {
-      setCitySuggestions([]);
-    }
+    };
+
+    searchCity();
+  }, [debouncedCity]);
+
+  const handleCityChange = (value) => {
+    setCity(value);
   };
 
   const handleCitySelect = (selectedCity) => {
@@ -191,7 +201,7 @@ const Comparison = () => {
 
       {comparisonData && (
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-          {[comparisonData.data1, comparisonData.data2].map((data, index) => (
+          {[comparisonData.data1, comparisonData.data2].map((data) => (
             <div
               key={data.year}
               className="p-6 border rounded-lg shadow-lg"

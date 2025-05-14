@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import useDebounce from '../hooks/useDebounce';
 
 const Aqi = () => {
   const [search, setSearch] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [aqiData, setAqiData] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const debouncedSearch = useDebounce(search, 500);
 
   const searchCities = async (searchText) => {
     if (searchText.length < 2) return;
@@ -70,13 +73,16 @@ const Aqi = () => {
     }
   };
 
-  const handleSearch = async (value) => {
-    setSearch(value);
-    if (value.length >= 2) {
-      await searchCities(value);
+  useEffect(() => {
+    if (debouncedSearch.length >= 2) {
+      searchCities(debouncedSearch);
     } else {
       setSuggestions([]);
     }
+  }, [debouncedSearch]);
+
+  const handleSearch = (value) => {
+    setSearch(value);
   };
 
   const handleCitySelect = (city) => {
