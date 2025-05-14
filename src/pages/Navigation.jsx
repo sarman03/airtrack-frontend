@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
+import useDebounce from '../hooks/useDebounce';
 
 // Configure the default marker icon
 const defaultIcon = new Icon({
@@ -30,6 +31,8 @@ const Navigation = () => {
   const [originalDistance, setOriginalDistance] = useState(null);
   const [shortestRouteAqi, setShortestRouteAqi] = useState(null);
   const [debugInfo, setDebugInfo] = useState(null);
+  const debouncedStartCity = useDebounce(startCity, 300);
+  const debouncedEndCity = useDebounce(endCity, 300);
 
   const searchCity = async (query) => {
     try {
@@ -49,47 +52,63 @@ const Navigation = () => {
     }
   };
 
-  const handleStartCityChange = async (value) => {
+  const handleStartCityChange = (value) => {
     setStartCity(value);
-    if (value.length >= 2) {
-      try {
-        const response = await axios.get(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(value)}&format=json&limit=5`
-        );
-        setStartSuggestions(response.data.map(item => ({
-          id: item.place_id,
-          name: item.display_name,
-          country: item.address?.country || ''
-        })));
-      } catch (error) {
-        console.error('Error fetching city suggestions:', error);
-        setStartSuggestions([]);
-      }
-    } else {
+    if (value.length < 2) {
       setStartSuggestions([]);
     }
   };
 
-  const handleEndCityChange = async (value) => {
+  const handleEndCityChange = (value) => {
     setEndCity(value);
-    if (value.length >= 2) {
-      try {
-        const response = await axios.get(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(value)}&format=json&limit=5`
-        );
-        setEndSuggestions(response.data.map(item => ({
-          id: item.place_id,
-          name: item.display_name,
-          country: item.address?.country || ''
-        })));
-      } catch (error) {
-        console.error('Error fetching city suggestions:', error);
-        setEndSuggestions([]);
-      }
-    } else {
+    if (value.length < 2) {
       setEndSuggestions([]);
     }
   };
+
+  useEffect(() => {
+    const fetchStartCitySuggestions = async () => {
+      if (debouncedStartCity.length >= 2) {
+        try {
+          const response = await axios.get(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(debouncedStartCity)}&format=json&limit=5`
+          );
+          setStartSuggestions(response.data.map(item => ({
+            id: item.place_id,
+            name: item.display_name,
+            country: item.address?.country || ''
+          })));
+        } catch (error) {
+          console.error('Error fetching city suggestions:', error);
+          setStartSuggestions([]);
+        }
+      }
+    };
+
+    fetchStartCitySuggestions();
+  }, [debouncedStartCity]);
+
+  useEffect(() => {
+    const fetchEndCitySuggestions = async () => {
+      if (debouncedEndCity.length >= 2) {
+        try {
+          const response = await axios.get(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(debouncedEndCity)}&format=json&limit=5`
+          );
+          setEndSuggestions(response.data.map(item => ({
+            id: item.place_id,
+            name: item.display_name,
+            country: item.address?.country || ''
+          })));
+        } catch (error) {
+          console.error('Error fetching city suggestions:', error);
+          setEndSuggestions([]);
+        }
+      }
+    };
+
+    fetchEndCitySuggestions();
+  }, [debouncedEndCity]);
 
   const handleCitySelect = (city, isStart) => {
     if (isStart) {
