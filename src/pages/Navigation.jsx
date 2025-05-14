@@ -1,6 +1,19 @@
 import React, { useState } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
+import { Icon } from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
+
+// Configure the default marker icon
+const defaultIcon = new Icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
 const Navigation = () => {
   const [start, setStart] = useState(null);
@@ -460,8 +473,8 @@ const Navigation = () => {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; OpenStreetMap contributors'
                 />
-                <Marker position={[start.lat, start.lng]} />
-                <Marker position={[end.lat, end.lng]} />
+                <Marker position={[start.lat, start.lng]} icon={defaultIcon} />
+                <Marker position={[end.lat, end.lng]} icon={defaultIcon} />
                 {routeCoords.length > 0 && (
                   <Polyline positions={routeCoords} color="blue" />
                 )}
