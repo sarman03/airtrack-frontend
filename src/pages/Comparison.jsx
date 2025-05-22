@@ -1,6 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import useDebounce from '../hooks/useDebounce';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const Comparison = () => {
   const [city, setCity] = useState('');
@@ -201,26 +223,76 @@ const Comparison = () => {
 
       {comparisonData && (
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-          {[comparisonData.data1, comparisonData.data2].map((data) => (
-            <div
-              key={data.year}
-              className="p-6 border rounded-lg shadow-lg"
-            >
-              <h3 className="text-xl font-semibold mb-4">{data.year}</h3>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-gray-600">Average PM2.5:</p>
-                  <p className="text-2xl font-bold">{data.averagePM25} µg/m³</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">AQI Category:</p>
-                  <p className="text-2xl font-bold" style={{ color: getAQIColor(data.aqi) }}>
-                    {data.category}
-                  </p>
-                </div>
+          {/* Chart Visualization */}
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <Line
+              data={{
+                labels: ['PM2.5 Level'],
+                datasets: [
+                  {
+                    label: `${year1}`,
+                    data: [parseFloat(comparisonData.data1.averagePM25)],
+                    backgroundColor: getAQIColor(comparisonData.data1.aqi),
+                    borderColor: getAQIColor(comparisonData.data1.aqi),
+                    borderWidth: 2
+                  },
+                  {
+                    label: `${year2}`,
+                    data: [parseFloat(comparisonData.data2.averagePM25)],
+                    backgroundColor: getAQIColor(comparisonData.data2.aqi),
+                    borderColor: getAQIColor(comparisonData.data2.aqi),
+                    borderWidth: 2
+                  }
+                ]
+              }}
+              options={{
+                responsive: true,
+                plugins: {
+                  legend: {
+                    position: 'top',
+                  },
+                  title: {
+                    display: true,
+                    text: 'PM2.5 Level Comparison'
+                  }
+                },
+                scales: {
+                  y: {
+                    beginAtZero: false,
+                    suggestedMin: Math.min(
+                      parseFloat(comparisonData.data1.averagePM25),
+                      parseFloat(comparisonData.data2.averagePM25)
+                    ) * 0.95,
+                    suggestedMax: Math.max(
+                      parseFloat(comparisonData.data1.averagePM25),
+                      parseFloat(comparisonData.data2.averagePM25)
+                    ) * 1.05,
+                    title: {
+                      display: true,
+                      text: 'PM2.5 Concentration (µg/m³)'
+                    }
+                  }
+                }
+              }}
+            />
+          </div>
+
+          {/* Existing Comparison Results */}
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h3 className="text-xl font-semibold mb-4">Comparison Results for {city}</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className={`p-4 rounded ${getAQIColor(comparisonData.data1.aqi).replace('#', 'bg-')}`}>
+                <h4 className="font-semibold">{year1}</h4>
+                <p>Average PM2.5: {comparisonData.data1.averagePM25} µg/m³</p>
+                <p>Category: {comparisonData.data1.category}</p>
+              </div>
+              <div className={`p-4 rounded ${getAQIColor(comparisonData.data2.aqi).replace('#', 'bg-')}`}>
+                <h4 className="font-semibold">{year2}</h4>
+                <p>Average PM2.5: {comparisonData.data2.averagePM25} µg/m³</p>
+                <p>Category: {comparisonData.data2.category}</p>
               </div>
             </div>
-          ))}
+          </div>
         </div>
       )}
     </div>

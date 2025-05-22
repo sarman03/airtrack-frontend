@@ -1,5 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import useDebounce from '../hooks/useDebounce';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const Aqi = () => {
   const [search, setSearch] = useState('');
@@ -58,6 +80,10 @@ const Aqi = () => {
     }
   };
 
+  // Add new state for chart data
+  const [chartData, setChartData] = useState(null);
+
+  // Modify getAirQuality function to prepare chart data
   const getAirQuality = async (lat, lon) => {
     setLoading(true);
     const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm10,pm2_5,carbon_monoxide,ozone,sulphur_dioxide,nitrogen_dioxide`;
@@ -66,10 +92,63 @@ const Aqi = () => {
       const response = await fetch(url);
       const data = await response.json();
       setAqiData(data.hourly);
+      
+      // Prepare chart data
+      const times = data.hourly.time.slice(0, 24).map(time => {
+        const date = new Date(time);
+        return date.getHours() + ':00';
+      });
+
+      setChartData({
+        labels: times,
+        datasets: [
+          {
+            label: 'PM2.5',
+            data: data.hourly.pm2_5.slice(0, 24),
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1
+          },
+          {
+            label: 'PM10',
+            data: data.hourly.pm10.slice(0, 24),
+            borderColor: 'rgb(255, 99, 132)',
+            tension: 0.1
+          }
+        ]
+      });
     } catch (error) {
       console.error('Error fetching air quality:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Chart options
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: '24-Hour Air Quality Trend'
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Concentration (µg/m³)'
+        }
+      },
+      x: {
+        title: {
+          display: true,
+          text: 'Time'
+        }
+      }
     }
   };
 
@@ -163,41 +242,51 @@ const Aqi = () => {
 
         {/* AQI Data Display */}
         {aqiData && !loading && (
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-xl font-semibold mb-4">Air Quality Data for {search}</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-gray-50 rounded">
-                <p className="font-medium">PM2.5</p>
-                <p className="text-lg">{aqiData.pm2_5[0]} µg/m³</p>
-                <div className={`mt-2 px-3 py-1 rounded-full text-sm font-medium inline-block ${calculateAQICategory('pm2_5', aqiData.pm2_5[0]).color}`}>
-                  {calculateAQICategory('pm2_5', aqiData.pm2_5[0]).category}
+          <>
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h3 className="text-xl font-semibold mb-4">Air Quality Data for {search}</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 rounded">
+                  <p className="font-medium">PM2.5</p>
+                  <p className="text-lg">{aqiData.pm2_5[0]} µg/m³</p>
+                  <div className={`mt-2 px-3 py-1 rounded-full text-sm font-medium inline-block ${calculateAQICategory('pm2_5', aqiData.pm2_5[0]).color}`}>
+                    {calculateAQICategory('pm2_5', aqiData.pm2_5[0]).category}
+                  </div>
                 </div>
-              </div>
-              <div className="p-4 bg-gray-50 rounded">
-                <p className="font-medium">PM10</p>
-                <p className="text-lg">{aqiData.pm10[0]} µg/m³</p>
-                <div className={`mt-2 px-3 py-1 rounded-full text-sm font-medium inline-block ${calculateAQICategory('pm10', aqiData.pm10[0]).color}`}>
-                  {calculateAQICategory('pm10', aqiData.pm10[0]).category}
+                <div className="p-4 bg-gray-50 rounded">
+                  <p className="font-medium">PM10</p>
+                  <p className="text-lg">{aqiData.pm10[0]} µg/m³</p>
+                  <div className={`mt-2 px-3 py-1 rounded-full text-sm font-medium inline-block ${calculateAQICategory('pm10', aqiData.pm10[0]).color}`}>
+                    {calculateAQICategory('pm10', aqiData.pm10[0]).category}
+                  </div>
                 </div>
-              </div>
-              <div className="p-4 bg-gray-50 rounded">
-                <p className="font-medium">Carbon Monoxide</p>
-                <p className="text-lg">{aqiData.carbon_monoxide[0]} µg/m³</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded">
-                <p className="font-medium">Ozone</p>
-                <p className="text-lg">{aqiData.ozone[0]} µg/m³</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded">
-                <p className="font-medium">Sulphur Dioxide</p>
-                <p className="text-lg">{aqiData.sulphur_dioxide[0]} µg/m³</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded">
-                <p className="font-medium">Nitrogen Dioxide</p>
-                <p className="text-lg">{aqiData.nitrogen_dioxide[0]} µg/m³</p>
+                <div className="p-4 bg-gray-50 rounded">
+                  <p className="font-medium">Carbon Monoxide</p>
+                  <p className="text-lg">{aqiData.carbon_monoxide[0]} µg/m³</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded">
+                  <p className="font-medium">Ozone</p>
+                  <p className="text-lg">{aqiData.ozone[0]} µg/m³</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded">
+                  <p className="font-medium">Sulphur Dioxide</p>
+                  <p className="text-lg">{aqiData.sulphur_dioxide[0]} µg/m³</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded">
+                  <p className="font-medium">Nitrogen Dioxide</p>
+                  <p className="text-lg">{aqiData.nitrogen_dioxide[0]} µg/m³</p>
+                </div>
               </div>
             </div>
-          </div>
+            
+            {/* Add Chart Display */}
+            {chartData && (
+              <div className="bg-white p-6 rounded-lg shadow mt-6">
+                <h3 className="text-xl font-semibold mb-4">Air Quality Trend</h3>
+                <Line data={chartData} options={chartOptions} />
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
